@@ -1,20 +1,40 @@
+using Npgsql;
+
 namespace Rinha.Backend.Api.Data;
 
-public interface IReaderContentStorage 
+internal sealed class ReaderContentStorage(NpgsqlConnection connection, ILogger<ReaderContentStorage> logger)
 {
-    ValueTask<byte[]> ReadEntry(string key, CancellationToken requestToken);    
-    ValueTask<IAsyncEnumerable<byte[]>> Search(string searchCriteria, CancellationToken requestToken);
-}
+    private readonly NpgsqlConnection _dbConnection = connection;
+    private readonly ILogger<ReaderContentStorage> _logger = logger;
 
-internal sealed partial class ContentStorage : IReaderContentStorage
-{
-    public ValueTask<byte[]> ReadEntry(string key, CancellationToken requestToken)
+    public ValueTask<byte[]?> ReadEntry(string id, CancellationToken requestToken)
     {
-        throw new NotImplementedException();
+        requestToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            using var command = new NpgsqlCommand(DbQueries.ReadSingleEntry, _dbConnection);
+            command.Parameters.AddWithValue("id", id);
+            return new ValueTask<byte[]?>(command.ExecuteScalar() as byte[]);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[ContentStorage][ReadEntry] => Failed to read entry from database");
+            return default;
+        }
     }
 
-    public ValueTask<IAsyncEnumerable<byte[]>> Search(string searchCriteria, CancellationToken requestToken)
+    public async IAsyncEnumerable<byte[]> Search(string searchCriteria, CancellationToken requestToken)
     {
-        throw new NotImplementedException();
+        requestToken.ThrowIfCancellationRequested();
+
+        using var command = new NpgsqlCommand(DbQueries.SearchEntry, _dbConnection);
+        command.Parameters.AddWithValue("search_criteria", $"%{searchCriteria}%");
+        var batchOfContents = new List<byte[]>();
+
+        using var reader = await command.ExecuteReaderAsync(requestToken);
+       
+        while (await reader.ReadAsync(requestToken))
+            yield return reader[0] as byte[];
     }
 }

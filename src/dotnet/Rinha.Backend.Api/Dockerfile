@@ -1,21 +1,17 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 5020
 
 ENV ASPNETCORE_URLS=http://+:5020
 
-# Creates a non-root user with an explicit UID and adds permission to access the /app folder
-# For more info, please refer to https://aka.ms/vscode-docker-dotnet-configure-containers
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
-
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+USER app
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG configuration=Release
 WORKDIR /src
-COPY ["Rinha.Backend.Api.csproj", "./"]
-RUN dotnet restore "Rinha.Backend.Api.csproj"
+COPY ["Rinha.Backend.Api/Rinha.Backend.Api.csproj", "Rinha.Backend.Api/"]
+RUN dotnet restore "Rinha.Backend.Api/Rinha.Backend.Api.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/Rinha.Backend.Api"
 RUN dotnet build "Rinha.Backend.Api.csproj" -c $configuration -o /app/build
 
 FROM build AS publish

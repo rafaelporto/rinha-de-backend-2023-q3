@@ -8,7 +8,10 @@ public static class PostEndpoint
     public static RouteHandlerBuilder Create(this IEndpointRouteBuilder routeBuilder)
     {
         return routeBuilder.MapPost("/pessoas", 
-            async ([FromBody]Pessoa novaPessoa, HttpContext context, IStore store) =>
+            async ([FromBody]Pessoa novaPessoa,
+                    HttpContext context,
+                    IStore store,
+                    CancellationToken requestToken) =>
         {
             if (novaPessoa.IsValid())
             {
@@ -16,8 +19,10 @@ public static class PostEndpoint
                 return Results.UnprocessableEntity();
             }
 
-            await store.Insert(novaPessoa);
+            await store.Insert(novaPessoa, requestToken);
             return Results.Created($"pessoas/{novaPessoa.Id}", null);
-        });
+        })
+        .WithName("CriarPessoa")
+        .WithOpenApi();
     }
 }

@@ -1,16 +1,19 @@
-using Microsoft.Extensions.Logging.Abstractions;
 using Rinha.Backend.Api;
-using Rinha.Backend.Api.Data;
+using Rinha.Backend.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddNpgsqlDataSource(
-    Environment.GetEnvironmentVariable(
-        "DB_CONNECTION_STRING") ??
-        "ERRO de connection string!!!", dataSourceBuilderAction: a => { a.UseLoggerFactory(NullLoggerFactory.Instance); });
-builder.Services.AddSingleton<IStore, Store>();
+builder.Services.AddServices();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(setup =>
+{
+    setup.SwaggerEndpoint("/swagger/v1/swagger.json", "Rinha Backend API");
+    setup.RoutePrefix = string.Empty;
+});
 
 app.MapEndpoints();
 
