@@ -1,0 +1,3 @@
+[submodule "competicao-repo"]
+	path = competicao-repo
+	url = https://github.com/zanfranceschi/rinha-de-backend-2023-q3.git
